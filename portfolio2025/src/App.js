@@ -1,24 +1,14 @@
 import './App.css';
-import Header from './Components/Images/header.js'
-import bg from "./Components/Images/apple-splash.png"
+import Header from './Components/Scripts/header.js'
+import Hero from './Components/Scripts/Hero.js'
 
 function App() {
 
-  const hero ={
-    backgroundImage: `url(${bg})`,
-    backgroundSize: "cover",
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "center",
-  }
-
-  const link ={
-
-  }
-
   return (
-    <main className="h-screen w-screen" style={hero}>
-      <div className="m-8">
-      <Header></Header>
+    <main className="relative h-screen w-screen box-border">
+      <div className="m-0 p-0">
+        <Header />
+        <Hero />
       </div>
     </main>
   );
