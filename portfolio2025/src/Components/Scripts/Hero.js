@@ -1,83 +1,171 @@
-import React, { useRef, useEffect, useState } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
-
-const Notebook = ({ scrollProgress }) => {
-  const { scene } = useGLTF("/models/Notebook.glb");
-  const ref = useRef();
-
-  useEffect(() => {
-    if (ref.current) {
-      // Rotate the model based on scroll progress
-      ref.current.rotation.y = scrollProgress * Math.PI * 0.8; // Rotate up to 90 degrees
-      // Move the model to the right based on scroll progress
-      ref.current.position.x = -1 + scrollProgress * 10; // Move up to x = 3
-    }
-  }, [scrollProgress]);
-
-  return (
-    <primitive
-      object={scene}
-      ref={ref}
-      position={[-1, 0, 0]} // Initial position
-      rotation={[0.2, -0.8, 0]} // Initial rotation
-      scale={10} // Maintain size
-      castShadow // Enable shadows
-    />
-  );
-};
+import React, { useRef, useEffect } from "react";
+import * as THREE from "https://cdn.skypack.dev/three@0.129.0/build/three.module.js";
+import { GLTFLoader } from "https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js";
+import Pc from "../models/PC.glb";
 
 const Hero = () => {
-  const [scrollY, setScrollY] = useState(0);
-  
+  const containerRef = useRef(null);
+  let mixer = null; // For controlling animations
+  const raycaster = new THREE.Raycaster(); // For detecting mouse hover
+  const mouse = new THREE.Vector2(); // For normalized mouse coordinates
+  let currentlyHovering = false; // To track hover state
+  let timeScale = 0; // To manage animation speed
+
   useEffect(() => {
-    // Listen for scroll events to calculate scroll progress
-    const handleScroll = () => {
-      // Update scroll position
-      setScrollY(window.scrollY);
+    if (!containerRef.current) return;
+
+    // Set up scene, camera, and renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(5, 3, 10);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    containerRef.current.appendChild(renderer.domElement);
+
+    // Add lighting
+    const ambientLight = new THREE.AmbientLight(0xf4dae2, 3);
+    scene.add(ambientLight);
+
+    const topLight = new THREE.DirectionalLight(0xf4dae2, 4);
+    topLight.position.set(500, 500, 500);
+    scene.add(topLight);
+
+    // Load the model
+    let model = null;
+    const loader = new GLTFLoader();
+    loader.load(
+      Pc,
+      (gltf) => {
+        model = gltf.scene;
+        model.scale.set(0.2, 0.2, 0.2);
+        model.position.set(0, 0, 0);
+        scene.add(model);
+
+        // Create mixer and animations
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(model);
+
+          gltf.animations.forEach((clip) => {
+            const action = mixer.clipAction(clip);
+            action.setLoop(THREE.LoopRepeat); // Loop the animation
+            action.clampWhenFinished = true; // Stay at the end frame when finished
+            action.paused = true; // Start paused
+            action.play(); // Prepare action
+          });
+        }
+      },
+      undefined,
+      (error) => {
+        console.error("Error loading model:", error);
+      }
+    );
+
+    // Handle mouse movement
+    const onMouseMove = (event) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener("mousemove", onMouseMove);
+
+    // Smoothly start the animation
+    const smoothStart = () => {
+      if (timeScale < 1) {
+        timeScale += 0.1;
+        mixer._actions.forEach((action) => {
+          action.timeScale = timeScale;
+          action.paused = false;
+        });
+        requestAnimationFrame(smoothStart);
+      }
     };
 
-    // Attach scroll event listener
-    window.addEventListener("scroll", handleScroll);
+    // Smoothly stop the animation
+    const smoothStop = () => {
+      if (timeScale > 0) {
+        timeScale = Math.max(0, timeScale - 0.05); // Reduce timeScale gradually
+        mixer._actions.forEach((action) => {
+          action.timeScale = timeScale; // Apply the reduced speed
+        });
+        if (timeScale > 0) {
+          requestAnimationFrame(smoothStop); // Continue reducing timeScale
+        } else {
+          // Once timeScale reaches 0, pause all actions
+          mixer._actions.forEach((action) => {
+            action.paused = true;
+          });
+        }
+      }
+    };    
 
-    // Clean up the event listener on unmount
+    // Animation loop
+    const clock = new THREE.Clock();
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      if (model) {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(model, true);
+
+        if (intersects.length > 0) {
+          if (!currentlyHovering) {
+            currentlyHovering = true;
+            smoothStart(); // Start animation smoothly
+          }
+        } else {
+          if (currentlyHovering) {
+            currentlyHovering = false;
+            smoothStop(); // Stop animation smoothly
+            console.log("smooth stop stopped")
+          }
+        }
+      }
+
+      if (mixer) {
+        const delta = clock.getDelta();
+        mixer.update(delta);
+      }
+
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    // Handle window resizing
+    const handleResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener("resize", handleResize);
+
+    // Clean up
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", onMouseMove);
+
+      while (containerRef.current.firstChild) {
+        containerRef.current.removeChild(containerRef.current.firstChild);
+      }
+
+      if (mixer) {
+        mixer.stopAllAction();
+      }
     };
   }, []);
 
-  // Calculate scroll progress (0 to 1) based on scroll position
-  const scrollProgress = Math.min(scrollY / window.innerHeight, 1);
-
   return (
-    <div className="h-[200vh] bg-dark-grey">
-      <div className="h-screen w-screen flex overflow-hidden">
-        <div className="w-1/2 flex items-center justify-center">
-          {/* Left half content */}
-        </div>
-        <div className="w-1/2 flex items-center justify-center">
-          <Canvas shadows>
-            {/* Ambient light for general illumination */}
-            <ambientLight intensity={0.5} />
-            {/* Directional light for highlights and shadows */}
-            <directionalLight
-              position={[0, 1, 10]}
-              intensity={1.5}
-              castShadow
-              shadow-mapSize-width={1024}
-              shadow-mapSize-height={1024}
-            />
-            {/* Add the model with smooth scrolling interactions */}
-            <Notebook scrollProgress={scrollProgress} />
-            {/* Disable zoom for OrbitControls */}
-            <OrbitControls enableZoom={false} />
-          </Canvas>
-        </div>
-      </div>
-      <div className="h-[100vh] flex items-center justify-center bg-light-grey">
-        <h1>Scroll down to see more content!</h1>
-      </div>
-    </div>
+    <div
+      ref={containerRef}
+      id="container3D"
+      style={{ width: "100vw", height: "100vh" }}
+      className="bg-dark-grey"
+    ></div>
   );
 };
 
