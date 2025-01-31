@@ -6,11 +6,12 @@ import Pc from "../models/PC.glb"; // Ensure the model path is correct
 
 const Model = () => {
   const containerRef = useRef(null);
-  let mixer = null; // For controlling animations
   const raycaster = new THREE.Raycaster(); // For detecting mouse hover
   const mouse = new THREE.Vector2(); // For normalized mouse coordinates
   let currentlyHovering = false; // To track hover state
-  let timeScale = 0; // To manage animation speed
+  let timeScale = 0; // Start with paused animation
+  let targetTimeScale = 0; // Target time scale for smooth transition
+  let lerpSpeed = 0.1; // Speed of the smooth transition (change as needed)
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -22,18 +23,12 @@ const Model = () => {
     const aspectRatio = width / height;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      45, 
-      aspectRatio, 
-      0.1, 
-      1000);
+    const camera = new THREE.PerspectiveCamera(45, aspectRatio, 0.1, 1000);
     camera.position.set(0, 0, 10);
-
 
     const renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setSize(width, height);
     container.appendChild(renderer.domElement);
-
 
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
@@ -44,13 +39,12 @@ const Model = () => {
     scene.add(directionalLight);
 
     // ✅ Add OrbitControls
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true; // Smooth movement
-      controls.dampingFactor = 0.05;
-      controls.screenSpacePanning = false;
-      controls.rotateSpeed = 0.5; // Adjust rotation speed
-      controls.enableZoom = false;
-
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // Smooth movement
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.rotateSpeed = 0.5; // Adjust rotation speed
+    controls.enableZoom = false;
 
     // Load the model
     let model = null;
@@ -64,7 +58,6 @@ const Model = () => {
         model.position.set(-1, 1, 0);
         scene.add(model);
 
-        // Create mixer and animations
         if (gltf.animations && gltf.animations.length > 0) {
           mixer = new THREE.AnimationMixer(model);
 
@@ -86,39 +79,19 @@ const Model = () => {
     // Handle mouse movement
     const onMouseMove = (event) => {
       const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     };
     window.addEventListener("mousemove", onMouseMove);
 
-    // Smoothly start the animation
+    // Smooth Start function
     const smoothStart = () => {
-      if (timeScale < 1) {
-        timeScale += 0.1;
-        mixer._actions.forEach((action) => {
-          action.timeScale = timeScale;
-          action.paused = false;
-        });
-        requestAnimationFrame(smoothStart);
-      }
+      targetTimeScale = 1; // Target speed for animation
     };
 
-    // Smoothly stop the animation
+    // Smooth Stop function
     const smoothStop = () => {
-      if (timeScale > 0) {
-        timeScale = Math.max(0, timeScale - 0.05); // Reduce timeScale gradually
-        mixer._actions.forEach((action) => {
-          action.timeScale = timeScale; // Apply the reduced speed
-        });
-        if (timeScale > 0) {
-          requestAnimationFrame(smoothStop); // Continue reducing timeScale
-        } else {
-          // Once timeScale reaches 0, pause all actions
-          mixer._actions.forEach((action) => {
-            action.paused = true;
-          });
-        }
-      }
+      targetTimeScale = 0; // Target to stop animation
     };
 
     // Animation loop
@@ -126,30 +99,35 @@ const Model = () => {
     const animate = () => {
       requestAnimationFrame(animate);
 
-      controls.update();
+      // Smooth transition of timeScale
+      if (timeScale !== targetTimeScale) {
+        timeScale = THREE.MathUtils.lerp(timeScale, targetTimeScale, lerpSpeed);
+      }
+
+      if (mixer && mixer._actions.length > 0) {
+        mixer._actions.forEach((action) => {
+          action.timeScale = timeScale; // Apply smooth timeScale
+          action.paused = timeScale === 0; // Pause when the timeScale is 0
+        });
+      }
+
+      // Update raycaster based on mouse position
+      raycaster.setFromCamera(mouse, camera);
 
       if (model) {
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObject(model, true);
-
-        if (intersects.length > 0) {
-          if (!currentlyHovering) {
-            currentlyHovering = true;
-            smoothStart(); // Start animation smoothly
-          }
-        } else {
-          if (currentlyHovering) {
-            currentlyHovering = false;
-            smoothStop(); // Stop animation smoothly
-          }
+        const intersects = raycaster.intersectObject(model, true) || [];
+        if (intersects.length > 0 && !currentlyHovering) {
+          currentlyHovering = true;
+          smoothStart(); // Smooth start animation
+        } else if (currentlyHovering && intersects.length === 0) {
+          currentlyHovering = false;
+          smoothStop(); // Smooth stop animation
         }
       }
 
-      if (mixer) {
-        const delta = clock.getDelta();
-        mixer.update(delta);
-      }
+      if (mixer) mixer.update(clock.getDelta());
 
+      controls.update();
       renderer.render(scene, camera);
     };
     animate();
@@ -169,34 +147,33 @@ const Model = () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", onMouseMove);
 
-      while (containerRef.current.firstChild) {
-        containerRef.current.removeChild(containerRef.current.firstChild);
-      }
-
       if (mixer) {
         mixer.stopAllAction();
+        mixer.uncacheRoot(model);
+      }
+
+      while (containerRef.current?.firstChild) {
+        containerRef.current.removeChild(containerRef.current.firstChild);
       }
     };
-  }, []);
+  });
 
   return (
     <div
-  ref={containerRef}
-  id="container3D"
-  style={{
-    width: "100%",
-    height: "80vh", // Adjust for navbar height
-    maxHeight: "100vh",
-    maxWidth: "100vw",
-    overflow: "hidden",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    aspectRatio: "16/9",
-  }}
-  className="bg-dark-grey animate-appear z-10 flex justify-center items-center"
-></div>
-
+      ref={containerRef}
+      id="container3D"
+      style={{
+        width: "100%",
+        height: "80vh", // Adjust for navbar height
+        maxWidth: "100vw",
+        overflow: "hidden",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        aspectRatio: "16/9",
+      }}
+      className="bg-dark-grey animate-appear z-10 flex justify-center items-center"
+    />
   );
 };
 
