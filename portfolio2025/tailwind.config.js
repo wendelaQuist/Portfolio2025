@@ -6,12 +6,27 @@ module.exports = {
       'dark-grey': '#14121A',
       'light-grey': '#2B2A31',
       'pink': '#F4DAE2',
+      'pink-400': '#c3aeb5',
       'purple': '#9B7DDE',
       'purple-light': '#b9a4e8',
       'blue': '#4585DF',
-      'blue-light': '#7daae9'
+      'blue-light': '#7daae9',
     },
-    extend: {},
+    extend: {
+      keyframes: {
+        appear: {
+          "0%": {
+            opacity: "0",
+          },
+          "100%": {
+            opacity: "1",
+          },
+        },
+      },
+      animation: {
+        appear: "appear 0.5s ease-in-out",
+      },
+    },
   },
   plugins: [],
-}
+};

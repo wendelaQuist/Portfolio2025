@@ -17,7 +17,7 @@ const Nav = () => {
   return (
     <div
       style={Blur}
-      className="fixed top-0 left-0 w-full h-[4rem] bg-[rgba(50,40,50,0.2)] backdrop-blur-sm text-pink z-10"
+      className="fixed top-0 left-0 w-full h-[4rem] bg-[rgba(50,40,50,0.2)] backdrop-blur-sm text-pink z-50"
     >
       {/* Desktop Navbar */}
       <div className="hidden lg:flex items-center w-full h-[4rem] xl:max-w-[1250px] mx-auto px-1">
