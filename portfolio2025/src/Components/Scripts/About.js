@@ -1,40 +1,29 @@
+import Store from "../Images/Nterra_winkel.jpg";
+
 const About = () => {
     return (
-        <section class="pt-10 overflow-hidden bg-pink dark:bg-gray-800 md:pt-0 sm:pt-16 2xl:pt-16">
-        <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
-            <div class="grid items-center grid-cols-1 md:grid-cols-2">
-    
-                <div>
-                    <h2 class="text-3xl font-bold leading-tight text-black dark:text-white sm:text-4xl lg:text-5xl">Hey 👋 I
-                        am
-                        <br class="block sm:hidden" /> Jenny Carter
+        <section class="h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-pink text-dark-grey">
+            <div class="flex flex-col md:flex-row items-start justify-center max-w-7xl w-full">
+                
+                {/* Text Content */}
+                <div class="md:w-1/2 flex flex-col p-0">
+                    <h2 class="text-3xl font-bold sm:text-4xl lg:text-5xl mb-2">
+                        My name is <br /> Wen Quist
                     </h2>
-                    <p class="max-w-lg mt-3 text-xl leading-relaxed text-gray-600 dark:text-gray-300 md:mt-8">
-                        Amet minim mollit non deserunt
-                        ullamco est sit aliqua dolor do amet sint. Velit officia consequat duis enim velit mollit.
-                        Exercitation veniam consequat sunt nostrud amet.
-                    </p>
-    
-                    <p class="mt-4 text-xl text-gray-600 dark:text-gray-300 md:mt-8">
-                        <span class="relative inline-block">
-                            <span class="absolute inline-block w-full bottom-0.5 h-2 bg-yellow-300 dark:bg-gray-900"></span>
-                        <span class="relative"> Have a question? </span>
-                        </span>
-                        <br class="block sm:hidden" />Contact <a href="#" title=""
-                            class="transition-all duration-200 text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-500 hover:underline">me</a>
+                    <p class="text-xl text-gray-600 dark:text-gray-300 mt-0">
+                        I am a passionate technologist and an enthusiastic student of IT & Media Design. <br/>
+                        From the age of ten, computers have been part of my life, thanks to my dad who introduced me to his computer store. There, I learned the impact of technology on society and enjoyed everything from customer service to hardware analysis. <br/>
+                        I aim to contribute positively to our technologically interconnected world through each project I undertake.
                     </p>
                 </div>
-    
-                <div class="relative">
-                    <img class="absolute inset-x-0 bottom-0 -mb-48 -translate-x-1/2 left-1/2" src="https://cdn.rareblocks.xyz/collection/celebration/images/team/1/blob-shape.svg" alt="" />
-    
-                    <img class="relative w-full xl:max-w-lg xl:mx-auto 2xl:origin-bottom 2xl:scale-110" src="https://cdn.rareblocks.xyz/collection/celebration/images/team/1/business-woman.png" alt="" />
+
+                {/* Image */}
+                <div class="md:w-1/2 flex justify-center mt-6 md:mt-0">
+                    <img class="rounded-lg shadow-xl max-w-full h-auto" src={Store} alt="Store" />
                 </div>
-    
             </div>
-        </div>
-    </section>
-    )
+        </section>
+    );
 }
 
 export default About;

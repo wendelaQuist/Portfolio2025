@@ -72,7 +72,7 @@ const Nav = () => {
             {isOpen && (
               <div className="absolute z-30 divide-y divide-gray-100 rounded-lg shadow-lg w-44 mt-[4rem]">
                 <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
-                  {["Mockups", "Templates", "Design", "Logos"].map(
+                  {["Branding", "Web development", "Design", "UI/UX", "Marketing & Strategy", "Project Management"].map(
                     (category) => (
                       <li key={category}>
                         <button
@@ -91,7 +91,7 @@ const Nav = () => {
             <input
               type="search"
               id="search-dropdown"
-              className="block p-2.5 w-full text-sm bg-gray-50 rounded-e-lg border-l-gray-50 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-dark-grey"
+              className="block p-2.5 w-full text-sm bg-gray-50 rounded-e-lg border-l-gray-50 border border-gray-300 text-dark-grey"
               placeholder="Search..."
               required
             />

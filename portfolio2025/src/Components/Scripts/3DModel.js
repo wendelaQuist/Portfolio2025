@@ -8,10 +8,19 @@ const Model = () => {
   const containerRef = useRef(null);
   const raycaster = new THREE.Raycaster(); // For detecting mouse hover
   const mouse = new THREE.Vector2(); // For normalized mouse coordinates
-  let currentlyHovering = false; // To track hover state
-  let timeScale = 0; // Start with paused animation
+  let timeScale = 0;
   let targetTimeScale = 0; // Target time scale for smooth transition
   let lerpSpeed = 0.1; // Speed of the smooth transition (change as needed)
+  let currentlyHovering = false; // To track hover state
+  
+  // Store original position and rotation of the model
+  const originalPosition = new THREE.Vector3();
+  const originalRotation = new THREE.Euler();
+  const cameraOriginalPosition = new THREE.Vector3(0, 0, 10); // Camera reset position
+
+  // Variables to manage the reset timeout
+  let resetTimeout = null;
+  let isResetting = false;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -31,14 +40,14 @@ const Model = () => {
     container.appendChild(renderer.domElement);
 
     // Add lighting
-    const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
+    const ambientLight = new THREE.AmbientLight(0x404040, 10); // Soft pink light
     scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
     directionalLight.position.set(5, 5, 5).normalize();
     scene.add(directionalLight);
 
-    // ✅ Add OrbitControls
+    // Add OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; // Smooth movement
     controls.dampingFactor = 0.05;
@@ -58,6 +67,9 @@ const Model = () => {
         model.position.set(-1, 1, 0);
         scene.add(model);
 
+        originalPosition.copy(model.position);
+        originalRotation.copy(model.rotation);
+
         if (gltf.animations && gltf.animations.length > 0) {
           mixer = new THREE.AnimationMixer(model);
 
@@ -65,9 +77,12 @@ const Model = () => {
             const action = mixer.clipAction(clip);
             action.setLoop(THREE.LoopRepeat); // Loop the animation
             action.clampWhenFinished = true; // Stay at the end frame when finished
-            action.paused = true; // Start paused
+            action.paused = false; // Start paused
+            action.timeScale = 0;
             action.play(); // Prepare action
           });
+        } else{
+          console.log("No animations found on the model.")
         }
       },
       undefined,
@@ -84,20 +99,40 @@ const Model = () => {
     };
     window.addEventListener("mousemove", onMouseMove);
 
-    // Smooth Start function
-    const smoothStart = () => {
-      targetTimeScale = 1; // Target speed for animation
+    // Function to handle the reset smoothly
+    const resetView = () => {
+      if (isResetting) return; // Prevent multiple resets
+
+      isResetting = true;
+
+      // Start the reset process, but smooth it over time
+      targetTimeScale = 0; // Reset the animation speed
+
+      setTimeout(() => {
+        isResetting = false; // Reset flag after smooth transition
+      }, 1000); // You can adjust this timeout as needed for smooth reset
     };
 
-    // Smooth Stop function
-    const smoothStop = () => {
-      targetTimeScale = 0; // Target to stop animation
+    // Check if the user is interacting with the controls
+    const controlsUpdate = () => {
+      if (controls.enabled && controls.target && (controls.object.position.distanceTo(controls.target) > 0.1)) {
+        // The user is interacting with the scene
+        clearTimeout(resetTimeout); // Clear previous timeout
+        resetTimeout = setTimeout(() => {
+          resetView(); // Call resetView after a delay
+        }, 2000); // Wait for 2 seconds after interaction ends
+      }
     };
 
     // Animation loop
     const clock = new THREE.Clock();
     const animate = () => {
-      requestAnimationFrame(animate);
+      renderer.setAnimationLoop(animate);
+
+      const delta = clock.getDelta();
+
+      if(mixer) mixer.update(delta);
+      renderer.render(scene, camera);
 
       // Smooth transition of timeScale
       if (timeScale !== targetTimeScale) {
@@ -111,24 +146,25 @@ const Model = () => {
         });
       }
 
-      // Update raycaster based on mouse position
+      // Smoothly interpolate camera position
+      camera.position.lerp(cameraOriginalPosition, lerpSpeed);
+
       raycaster.setFromCamera(mouse, camera);
 
+      // Smoothly interpolate model position
       if (model) {
-        const intersects = raycaster.intersectObject(model, true) || [];
-        if (intersects.length > 0 && !currentlyHovering) {
-          currentlyHovering = true;
-          smoothStart(); // Smooth start animation
-        } else if (currentlyHovering && intersects.length === 0) {
-          currentlyHovering = false;
-          smoothStop(); // Smooth stop animation
-        }
+        model.position.lerp(originalPosition, lerpSpeed);
+
+        // Smoothly interpolate model rotation (x, y, z axis)
+        model.rotation.set(
+          THREE.MathUtils.lerp(model.rotation.x, originalRotation.x, lerpSpeed),
+          THREE.MathUtils.lerp(model.rotation.y, originalRotation.y, lerpSpeed),
+          THREE.MathUtils.lerp(model.rotation.z, originalRotation.z, lerpSpeed)
+        );
       }
 
-      if (mixer) mixer.update(clock.getDelta());
-
       controls.update();
-      renderer.render(scene, camera);
+      controlsUpdate(); // Update check for interaction
     };
     animate();
 

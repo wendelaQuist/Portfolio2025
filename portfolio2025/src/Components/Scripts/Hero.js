@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Model from "./3DModel";
 
 const Hero = () => {
+
   return (
-    <main className="bg-dark-grey relative overflow-hidden h-screen flex items-center">
+    <section className="bg-dark-grey relative overflow-hidden h-screen flex items-center">
       <div className="container mx-auto px-6 flex h-full items-center">
         {/* Left Side: Text */}
         <div className="sm:w-2/3 lg:w-2/5 flex flex-col justify-center">
@@ -34,7 +35,7 @@ const Hero = () => {
           </div>
         </div>
       </div>
-    </main>
+    </section>
   );
 }
 
