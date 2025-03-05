@@ -4,6 +4,7 @@ module.exports = {
   theme: {
     colors: {
       'dark-grey': '#14121A',
+      'medium-grey': '#1D1C24',
       'light-grey': '#2B2A31',
       'pink': '#F4DAE2',
       'pink-400': '#c3aeb5',

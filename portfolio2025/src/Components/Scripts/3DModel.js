@@ -54,6 +54,7 @@ const Model = () => {
     controls.screenSpacePanning = false;
     controls.rotateSpeed = 0.5; // Adjust rotation speed
     controls.enableZoom = false;
+    controls.enablePan = false;
 
     // Load the model
     let model = null;
