@@ -11,8 +11,10 @@ const About = () => {
                         My name is <br /> Wen Quist
                     </h2>
                     <p class="text-xl text-gray-600 dark:text-gray-300 mt-0">
-                        I am a passionate technologist and an enthusiastic student of IT & Media Design. <br/>
-                        From the age of ten, computers have been part of my life, thanks to my dad who introduced me to his computer store. There, I learned the impact of technology on society and enjoyed everything from customer service to hardware analysis. <br/>
+                        I am a passionate technologist and an enthusiastic student of IT & Media Design. 
+                        <br></br>
+                        From the age of ten, computers have been part of my life, thanks to my dad who introduced me to his computer store. There, I learned the impact of technology on society and enjoyed everything from customer service to hardware analysis. 
+                        <br></br>
                         I aim to contribute positively to our technologically interconnected world through each project I undertake.
                     </p>
                 </div>

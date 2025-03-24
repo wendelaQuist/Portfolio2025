@@ -1,11 +1,61 @@
 import { LuSquareMenu } from "react-icons/lu";
 import Logo from "../Images/Logo_Illustration.png";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from 'react-router-dom';
 
 const Nav = () => {
   const Blur = {
     background: "rgba(50, 40, 50, 0.2)",
     backdropFilter: "blur(5px)",
+  };
+
+  const[activeSection, setActiveSection] = useState(""); //tracking the active section
+  const[scrolling, setScrolling] = useState(false);
+  const location = useLocation();
+  const isActive = (section) => activeSection === section;
+
+  //smooth scrolling onepager
+  const handleScroll = () => {
+    if (scrolling) return; //skip if scrolling happened via clicking
+
+    const sections = ["home", "about", "projects"]; // defining sections with id's
+
+    let found = false;
+
+    for (let section of sections){
+      const element = document.getElementById(section);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        if (rect.top <= 0 && rect.bottom >= 0) {
+          setActiveSection(section);
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found){
+      setActiveSection(""); //reset if no section is in view
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+
+    return() => {
+      window.removeEventListener("scroll", handleScroll);
+    }
+  }, [scrolling]);
+
+  const handleSectionClick = (id) => {
+    setScrolling(true); // disable scroll listener
+    setActiveSection(id);
+    const section = document.getElementById(id);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block:"start"});
+      setTimeout(() => {
+        setScrolling(false); //activate scroll listener
+      }, 1000)
+    }
   };
 
   const [isOpen, setOpen] = useState(false); // State for toggling dropdown
@@ -15,6 +65,7 @@ const Nav = () => {
   };
 
   return (
+
     <div
       style={Blur}
       className="fixed top-0 left-0 w-full h-[4rem] bg-[rgba(50,40,50,0.2)] backdrop-blur-sm text-pink z-50"
@@ -33,15 +84,21 @@ const Nav = () => {
         {/* Nav Links */}
         <div className="flex-1 flex items-center justify-end space-x-10">
           <ul className="flex items-center space-x-6">
-            {["Home", "About Me", "Projects", "Contact"].map((link) => (
-              <li
-                key={link}
-                className="text-sm cursor-pointer relative group hover:text-gray-200"
+            <li className={`text-sm cursor-pointer relative group ${isActive('home') ? "text-light-grey" : "hover:text-light-grey"}`}
+              onClick={() => handleSectionClick('home')}
               >
-                {link}
-                <span className="absolute left-0 bottom-0 w-0 h-[2px] bg-[#F4DAE2] transition-all duration-300 group-hover:w-full"></span>
-              </li>
-            ))}
+              Home
+            </li>
+            <li className={`text-sm cursor-pointer relative group ${isActive('about') ? "text-light-grey" : "hover:text-light-grey"}`}
+              onClick={() => handleSectionClick('about')}
+              >
+                About
+            </li>
+            <li className={`text-sm cursor-pointer relative group ${isActive('projects') ? "text-light-grey" : "hover:text-light-grey"}`}
+              onClick={() => handleSectionClick('projects')}
+              >
+                Projects
+            </li>
           </ul>
 
           {/* Search Form */}
